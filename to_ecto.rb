@@ -33,28 +33,33 @@ def camelize(str)
   str.split('_').map(&:capitalize).join()
 end
 
-def modulize(str, scope=nil)
+def singular(str)
   s = str.dup
   if str.end_with?('series')
     # historical reasons
-    s = s.delete_suffix!('s')
+    s.delete_suffix!('s')
   elsif str.end_with?('ties')
     # abilities => ability
-    s = s.delete_suffix!('ies') + 'y'
+    s.delete_suffix!('ies') + 'y'
   elsif str.end_with?('oes')
     # heroes => hero
-    s = s.delete_suffix!('es')
+    s.delete_suffix!('es')
   elsif str.end_with?('ches')
     # matches => match
-    s = s.delete_suffix!('es')
+    s.delete_suffix!('es')
   elsif str.end_with?('sses')
     # processes => process
-    s = s.delete_suffix!('es')
+    s.delete_suffix!('es')
   elsif str.end_with?('s')
     # teams => team
-    s = s.delete_suffix!('s')
+    s.delete_suffix!('s')
+  else
+    s
   end
+end
 
+def modulize(str, scope=nil)
+  s = singular(str)
   pref = ''
   if scope == nil
     ss = s.split('_')
@@ -105,7 +110,7 @@ class Table
       end
     end
     @belongs.each do |target, opts|
-      puts "    belongs_to(:#{target}, #{modulize(target,@name)})"
+      puts "    belongs_to(:#{singular(target)}, #{modulize(target,@name)})"
     end
     puts '  end'
     puts 'end'
@@ -151,10 +156,12 @@ def create_table(name, opts, &block)
 end
 
 def add_foreign_key(table, target, opts=[])
-  # TODO: has_one has_many
   # https://haughtcodeworks.com/blog/software-development/ecto-schemas-on-rails/
-  puts "#{table}: #{nil == $tables[table]}"
-  ###### fuuuu https://stackoverflow.com/a/51479789/1418165
+  if !$tables.key?(table)
+    # FIXME? https://stackoverflow.com/a/51479789/1418165
+    puts "Skipping fk from #{table} to #{target} as table wasn't dumped!"
+    return
+  end
   $tables[table].belongs_to(target, opts)
   return
 end
